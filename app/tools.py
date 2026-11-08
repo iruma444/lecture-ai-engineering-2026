@@ -5,6 +5,7 @@
 """
 
 import json
+import random
 from functools import cache
 from pathlib import Path
 
@@ -19,7 +20,7 @@ def load_glossary() -> list[dict]:
 
 
 def _normalize(text: str) -> str:
-    return text.casefold().replace(" ", "").replace("　", "")
+    return text.casefold().replace(" ", "").replace(" ", "")
 
 
 def _names(entry: dict) -> list[str]:
@@ -77,3 +78,24 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+
+def make_quiz(lecture: int) -> str:
+    """指定した回（1始まりの整数）の用語から1つを選び、確認問題と答えを返す。
+
+    「第2回の確認問題を出して」「復習クイズを出して」のように、
+    指定した回の復習用の問題を求められたときに使う。
+    """
+    terms = [e for e in load_glossary() if e.get("lecture") == lecture]
+    if not terms:
+        available = sorted({str(e.get("lecture")) for e in load_glossary() if "lecture" in e})
+        return f"第{lecture}回の用語は見つかりませんでした。用意されている回: {', '.join(available)}"
+    chosen = random.choice(terms)
+    return json.dumps(
+        {
+            "lecture": lecture,
+            "question": f"「{chosen['term']}」の意味は？",
+            "answer": chosen["definition"],
+        },
+        ensure_ascii=False,
+    )
