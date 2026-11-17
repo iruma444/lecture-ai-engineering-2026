@@ -126,3 +126,35 @@ def search_graph(query: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
     except APIError as e:
         return json.dumps({"error": api_error_message(e.code)}, ensure_ascii=False)
+
+
+def browse_outline(node_id: str | None = None) -> str:
+    """第1〜3回の目次と各ページの実質先頭文（見出し重複を除外済）を返す。ページID指定時は全文を返す。
+
+    章全体の構成やAppendixの関連項目を確認したいとき、または特定ページの全文（例: 'lec03-main-p069'）を読むときに使う。
+    最初はnode_idを省略するか講義ID（'lec01-main'〜'lec03-main'）を指定する。
+    """
+    from app.retrieval import browse_outline as outline
+
+    try:
+        return json.dumps(outline(node_id), ensure_ascii=False)
+    except (ValueError, OSError) as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+
+def search_hybrid(query: str) -> str:
+    """第1〜3回の本講義資料を構造認識型ハイブリッド検索し、本文と引用情報を返す。
+
+    章偏りを抑えたベクトル検索上位ページ（seeds）に加え、同一章内の連続ページ（expanded_adjacent）と、
+    特異度・クエリ類似度で絞り込んだ用語・関連用語ブリッジ（expanded_terms）を最大8ページ返す。
+    """
+    import sqlite3
+    from google.genai.errors import APIError
+    from app.retrieval import search_hybrid as hybrid
+
+    try:
+        return json.dumps(hybrid(query), ensure_ascii=False)
+    except (ValueError, OSError, sqlite3.Error) as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+    except APIError as e:
+        return json.dumps({"error": api_error_message(e.code)}, ensure_ascii=False)
